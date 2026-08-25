@@ -1,0 +1,109 @@
+html.gwp-wide {
+  --gwp-width: calc(100% - 16px);
+  --thread-content-max-width: 100%;
+  --conversation-max-width: 100%;
+}
+
+/* 外層先拿掉固定 max-width，讓主欄可以吃滿側欄右側的空間 */
+html.gwp-wide .content-wrapper:has(chat-window),
+html.gwp-wide .main-content:has(chat-window),
+html.gwp-wide .content-container:has(chat-window),
+html.gwp-wide .content-container:has(.conversation-container),
+html.gwp-wide [role="main"]:has(chat-window),
+html.gwp-wide [role="main"]:has(.conversation-container),
+html.gwp-wide main:has(chat-window),
+html.gwp-wide main:has(.conversation-container),
+html.gwp-wide chat-window,
+html.gwp-wide .chat-container,
+html.gwp-wide chat-window-content,
+html.gwp-wide .chat-history-scroll-container,
+html.gwp-wide .chat-history,
+html.gwp-wide infinite-scroller,
+html.gwp-wide input-container {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+html.gwp-wide main > div:has(user-query),
+html.gwp-wide main > div:has(model-response),
+html.gwp-wide main > div:has(.conversation-container) {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* 對話列與底部輸入框：真正決定中間欄寬的容器 */
+html.gwp-wide .conversation-container,
+html.gwp-wide [class*="conversation-container"],
+html.gwp-wide .input-area-container,
+html.gwp-wide .bottom-container,
+html.gwp-wide input-container .input-area-container,
+html.gwp-wide input-container input-area-v2,
+html.gwp-wide input-area-v2 {
+  max-width: none !important;
+  width: var(--gwp-width, 100%) !important;
+  min-width: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* 回覆內容撐滿已加寬的欄位 */
+html.gwp-wide model-response,
+html.gwp-wide .model-response,
+html.gwp-wide .model-response-container,
+html.gwp-wide response-container,
+html.gwp-wide .presented-response-container,
+html.gwp-wide .message-content,
+html.gwp-wide .response-content,
+html.gwp-wide structured-content-container,
+html.gwp-wide [aria-label="Gemini response"],
+html.gwp-wide [data-message-author-role="assistant"],
+html.gwp-wide [data-message-author-role="model"] {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+html.gwp-wide user-query,
+html.gwp-wide .user-query-container,
+html.gwp-wide user-query-content,
+html.gwp-wide .query-content,
+html.gwp-wide .user-query-bubble-container {
+  max-width: 100% !important;
+}
+
+html.gwp-wide .user-query-bubble-with-background {
+  max-width: 100% !important;
+  width: fit-content !important;
+}
+
+/* 表格：跟著欄位變寬，必要時可橫向捲動而不是被裁切 */
+html.gwp-wide table-block,
+html.gwp-wide .table-block,
+html.gwp-wide .table-container,
+html.gwp-wide .table-content,
+html.gwp-wide .horizontal-scroll-wrapper,
+html.gwp-wide .container:has(table) {
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html.gwp-wide table-block .table-content,
+html.gwp-wide .table-block .table-content,
+html.gwp-wide .table-block.has-scrollbar,
+html.gwp-wide .horizontal-scroll-wrapper {
+  overflow-x: auto !important;
+}
+
+html.gwp-wide table-block table,
+html.gwp-wide .table-block table,
+html.gwp-wide model-response table {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+html.gwp-wide pre,
+html.gwp-wide .code-block,
+html.gwp-wide .code-container {
+  max-width: 100% !important;
+}

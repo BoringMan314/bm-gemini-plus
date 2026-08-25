@@ -1,0 +1,26 @@
+{
+  "extName": {
+    "message": "[B.M] Gemini Plus",
+    "description": "Extension name shown in Chrome"
+  },
+  "extDescription": {
+    "message": "Optimize various Gemini details",
+    "description": "Extension description"
+  },
+  "enableWide": {
+    "message": "Enable Plus",
+    "description": "Toggle label"
+  },
+  "columnWidth": {
+    "message": "Column widening",
+    "description": "Width slider label"
+  },
+  "hintDefault": {
+    "message": "Default",
+    "description": "Slider left hint: Gemini default width"
+  },
+  "hintFlush": {
+    "message": "Edge to edge",
+    "description": "Slider right hint"
+  }
+}
