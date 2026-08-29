@@ -38,13 +38,16 @@ function notifyTabs(settings) {
   chrome.tabs.query(
     {
       url: ["https://gemini.google.com/*", "https://bard.google.com/*"],
+      discarded: false,
     },
     (tabs) => {
       for (const tab of tabs) {
-        chrome.tabs.sendMessage(tab.id, {
-          type: "gwp:update",
-          ...settings,
-        });
+        chrome.tabs
+          .sendMessage(tab.id, {
+            type: "gwp:update",
+            ...settings,
+          })
+          .catch(() => {});
       }
     }
   );
