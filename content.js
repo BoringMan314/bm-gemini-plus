@@ -7,6 +7,7 @@
   };
   const NATIVE_WIDTH_PX = 768;
   const SCROLLBAR_GAP_PX = 16;
+  const MAX_INSET_PX = 48;
   const MIN_PERCENT = 0;
   const MAX_PERCENT = 100;
   const STEP_PERCENT = 5;
@@ -60,11 +61,19 @@
     return document.querySelector(".conversation-container");
   }
 
+  function layoutScrollbarWidth(el) {
+    if (!el) return 0;
+    const cs = getComputedStyle(el);
+    const border = (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+    return Math.max(0, Math.round(el.offsetWidth - el.clientWidth - border));
+  }
+
   function getScrollContainer() {
     const selectors = [
+      ".content-container:has(chat-window)",
+      ".content-container:has(.conversation-container)",
+      ".content-container",
       ".chat-history-scroll-container",
-      ".chat-history",
-      "infinite-scroller",
       "chat-window-content",
       "chat-window",
       "main",
@@ -72,36 +81,97 @@
     ];
 
     for (const selector of selectors) {
-      const el = document.querySelector(selector);
+      let el = null;
+      try {
+        el = document.querySelector(selector);
+      } catch (_error) {
+        el = null;
+      }
       if (el && el.clientWidth > 0) return el;
     }
     return document.documentElement;
   }
 
+  function syncScrollbarLane(el) {
+    if (!el || el === document.documentElement || el === document.body) return;
+    // 傳統捲軸已從 clientWidth 扣除。疊加捲軸不會佔版面，改在末端留白。
+    if (layoutScrollbarWidth(el) >= 8) {
+      if (el.dataset.gwpScrollbarPad === "1") {
+        el.style.removeProperty("padding-inline-end");
+        delete el.dataset.gwpScrollbarPad;
+      }
+      return;
+    }
+    el.style.setProperty("padding-inline-end", `${SCROLLBAR_GAP_PX}px`, "important");
+    el.dataset.gwpScrollbarPad = "1";
+    void el.offsetWidth;
+  }
+
+  function clearScrollbarLane() {
+    document.querySelectorAll("[data-gwp-scrollbar-pad]").forEach((el) => {
+      el.style.removeProperty("padding-inline-end");
+      delete el.dataset.gwpScrollbarPad;
+    });
+  }
+
   function getAvailableWidth() {
     const host = getScrollContainer();
+    syncScrollbarLane(host);
+    const cs = host ? getComputedStyle(host) : null;
+    const pad = cs ? (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) : 0;
     const hostWidth = host?.clientWidth || document.documentElement.clientWidth || 0;
-    return Math.max(0, hostWidth - SCROLLBAR_GAP_PX);
+    return Math.max(0, Math.round(hostWidth - pad - MAX_INSET_PX));
+  }
+
+  function readDesignContentWidth() {
+    const host = document.querySelector(
+      "chat-window-content.enable-luminous-content-width-update, .enable-luminous-content-width-update"
+    );
+    if (!host) return 0;
+    const px = parseFloat(
+      getComputedStyle(host).getPropertyValue("--bard-chat-window-content-width-default")
+    );
+    return Number.isFinite(px) && px >= 280 ? Math.round(px) : 0;
   }
 
   function captureNativeWidth() {
-    const el = conversationEl();
-    if (!el) return nativeWidthPx || NATIVE_WIDTH_PX;
     if (nativeWidthPx > 0) return nativeWidthPx;
+
+    // 新版 conversation-container 已是全寬，真正的預設欄寬在 708px 這層。
+    const design = readDesignContentWidth();
+    if (design) {
+      nativeWidthPx = design;
+      return nativeWidthPx;
+    }
+
+    const el = conversationEl() || document.querySelector("user-query, .input-area-container");
+    if (!el) return NATIVE_WIDTH_PX;
 
     const html = document.documentElement;
     const style = document.getElementById(STYLE_ID);
     const wasWide = html.classList.contains("gwp-wide");
-    if (wasWide) html.classList.remove("gwp-wide", "gwp-enabled");
+    html.classList.remove("gwp-wide", "gwp-enabled");
     if (style) style.disabled = true;
-    ["max-width", "width", "min-width"].forEach((prop) => el.style.removeProperty(prop));
+    clearInline();
     void el.offsetWidth;
 
-    const measured = Math.round(el.getBoundingClientRect().width);
-    if (measured >= 280) nativeWidthPx = measured;
+    const probe = document.querySelector("user-query, .response-container-header, .input-area-container");
+    const probeMax = probe ? parseFloat(getComputedStyle(probe).maxWidth) : NaN;
+    const shell = Math.round(el.getBoundingClientRect().width);
+    const available = Math.max(shell, getAvailableWidth());
+    if (Number.isFinite(probeMax) && probeMax >= 280 && probeMax < available * 0.95) {
+      nativeWidthPx = Math.round(probeMax);
+    } else if (shell >= 280 && shell < available * 0.95) {
+      nativeWidthPx = shell;
+    } else if (shell >= 280) {
+      nativeWidthPx = shell;
+    } else {
+      nativeWidthPx = NATIVE_WIDTH_PX;
+    }
 
     if (style) style.disabled = false;
-    return nativeWidthPx || NATIVE_WIDTH_PX;
+    if (wasWide) html.classList.add("gwp-wide");
+    return nativeWidthPx;
   }
 
   function widthValue() {
@@ -135,8 +205,8 @@ html.gwp-wide .input-area-container,
 html.gwp-wide .bottom-container,
 html.gwp-wide input-container .input-area-container,
 html.gwp-wide input-area-v2 {
-  max-width: none !important;
-  width: ${width} !important;
+  max-width: 100% !important;
+  width: min(100%, ${width}) !important;
   min-width: 0 !important;
   margin-left: auto !important;
   margin-right: auto !important;
@@ -154,8 +224,8 @@ html.gwp-wide input-area-v2 {
 .input-area-container,
 .bottom-container,
 input-area-v2 {
-  max-width: none !important;
-  width: ${width} !important;
+  max-width: 100% !important;
+  width: min(100%, ${width}) !important;
   min-width: 0 !important;
   margin-left: auto !important;
   margin-right: auto !important;
@@ -165,8 +235,7 @@ model-response,
 .model-response,
 .response-container,
 .presented-response-container,
-.message-content,
-table-block,
+.table-block,
 .table-block,
 .table-content,
 structured-content-container,
@@ -174,6 +243,22 @@ structured-content-container,
 table {
   max-width: 100% !important;
   width: 100% !important;
+}
+.response-container-header,
+.response-container-footer,
+.response-footer,
+.response-container-content,
+message-actions,
+.markdown,
+message-content,
+.md-content > * {
+  max-width: var(--gwp-width, 100%) !important;
+  width: min(100%, var(--gwp-width, 100%)) !important;
+  margin-inline: auto !important;
+  box-sizing: border-box !important;
+}
+message-actions {
+  margin-inline: 0 !important;
 }
 .table-content,
 .horizontal-scroll-wrapper {
@@ -237,8 +322,8 @@ table {
     if (!width) return;
     for (const selector of KEY_CONTAINERS) {
       root.querySelectorAll(selector).forEach((el) => {
-        setImportant(el, "max-width", "none");
-        setImportant(el, "width", width);
+        setImportant(el, "max-width", "100%");
+        setImportant(el, "width", `min(100%, ${width})`);
         setImportant(el, "min-width", "0");
         setImportant(el, "margin-left", "auto");
         setImportant(el, "margin-right", "auto");
@@ -248,7 +333,7 @@ table {
 
     for (const selector of FILL_SELECTORS) {
       root.querySelectorAll(selector).forEach((el) => {
-        setImportant(el, "max-width", "none");
+        setImportant(el, "max-width", "100%");
         setImportant(el, "width", "100%");
         setImportant(el, "box-sizing", "border-box");
       });
@@ -263,7 +348,13 @@ table {
     let node = start.parentElement;
     while (node && node !== document.body && node !== document.documentElement) {
       const tag = node.tagName.toLowerCase();
-      if (tag === "body" || tag === "html" || tag === "chat-app" || tag === "bard-app") {
+      if (
+        tag === "body" ||
+        tag === "html" ||
+        tag === "chat-app" ||
+        tag === "bard-app" ||
+        node.classList.contains("content-container")
+      ) {
         break;
       }
 
@@ -272,13 +363,13 @@ table {
         const px = parseFloat(maxWidth);
         // 只放寬對話欄常見的 768~1200px 限制，避免誤傷小元件
         if (!Number.isNaN(px) && px >= 480 && px < window.innerWidth * 0.92) {
-          setImportant(node, "max-width", "none");
+          setImportant(node, "max-width", "100%");
           setImportant(node, "width", "100%");
+          setImportant(node, "min-width", "0");
         }
       }
 
       if (tag === "main" || node.getAttribute("role") === "main") {
-        setImportant(node, "max-width", "none");
         break;
       }
       node = node.parentElement;
@@ -327,6 +418,7 @@ table {
         const style = document.getElementById(STYLE_ID);
         if (style) style.remove();
         clearInline();
+        clearScrollbarLane();
       }
     } finally {
       observer.observe(document.documentElement, {
@@ -355,6 +447,7 @@ table {
 
   window.addEventListener("resize", () => {
     if (!settings.enabled || usesNativeWidth()) return;
+    nativeWidthPx = 0;
     window.clearTimeout(debounceTimer);
     debounceTimer = window.setTimeout(apply, 160);
   });

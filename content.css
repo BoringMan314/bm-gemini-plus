@@ -1,14 +1,19 @@
 html.gwp-wide {
-  --gwp-width: calc(100% - 16px);
+  --gwp-width: 100%;
   --thread-content-max-width: 100%;
   --conversation-max-width: 100%;
 }
 
-/* 外層先拿掉固定 max-width，讓主欄可以吃滿側欄右側的空間 */
+/* 直向捲軸在 .content-container。保留捲軸軌道，避免加寬後的內容蓋上去。 */
+html.gwp-wide .content-container:has(chat-window),
+html.gwp-wide .content-container:has(.conversation-container) {
+  scrollbar-gutter: stable !important;
+  min-width: 0 !important;
+}
+
+/* 外層拿掉 760px 上限，但停在父層內容區，不要溢出捲動區蓋住捲軸 */
 html.gwp-wide .content-wrapper:has(chat-window),
 html.gwp-wide .main-content:has(chat-window),
-html.gwp-wide .content-container:has(chat-window),
-html.gwp-wide .content-container:has(.conversation-container),
 html.gwp-wide [role="main"]:has(chat-window),
 html.gwp-wide [role="main"]:has(.conversation-container),
 html.gwp-wide main:has(chat-window),
@@ -20,15 +25,17 @@ html.gwp-wide .chat-history-scroll-container,
 html.gwp-wide .chat-history,
 html.gwp-wide infinite-scroller,
 html.gwp-wide input-container {
-  max-width: none !important;
+  max-width: 100% !important;
   width: 100% !important;
+  min-width: 0 !important;
 }
 
 html.gwp-wide main > div:has(user-query),
 html.gwp-wide main > div:has(model-response),
 html.gwp-wide main > div:has(.conversation-container) {
-  max-width: none !important;
+  max-width: 100% !important;
   width: 100% !important;
+  min-width: 0 !important;
 }
 
 /* 對話列與底部輸入框：真正決定中間欄寬的容器 */
@@ -39,12 +46,36 @@ html.gwp-wide .bottom-container,
 html.gwp-wide input-container .input-area-container,
 html.gwp-wide input-container input-area-v2,
 html.gwp-wide input-area-v2 {
-  max-width: none !important;
+  max-width: 100% !important;
   width: var(--gwp-width, 100%) !important;
   min-width: 0 !important;
   margin-left: auto !important;
   margin-right: auto !important;
   box-sizing: border-box !important;
+}
+
+/* 新版內文鎖在約 708px。百分比要改這層，不能只改已經全寬的外框。 */
+html.gwp-wide .response-container-header,
+html.gwp-wide .response-container-footer,
+html.gwp-wide .response-footer,
+html.gwp-wide .response-container-content,
+html.gwp-wide message-actions,
+html.gwp-wide model-response-disclaimers,
+html.gwp-wide .bot-name,
+html.gwp-wide .imported-chat-label,
+html.gwp-wide .markdown,
+html.gwp-wide message-content,
+html.gwp-wide .response-content,
+html.gwp-wide user-query,
+html.gwp-wide .md-content > * {
+  max-width: var(--gwp-width, 100%) !important;
+  width: min(100%, var(--gwp-width, 100%)) !important;
+  margin-inline: auto !important;
+  box-sizing: border-box !important;
+}
+
+html.gwp-wide message-actions {
+  margin-inline: 0 !important;
 }
 
 /* 回覆內容撐滿已加寬的欄位 */
